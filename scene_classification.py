@@ -232,7 +232,7 @@ def train(model, train_loader, val_loader, optimizer, criterion, device,
             print(results)
 
             # Write to log file
-            with open('training_log_train1_new_transform.txt', 'a') as f:
+            with open('training_log_train1_new_base.txt', 'a') as f:
                 f.write(results + '\n')
 
 
@@ -275,7 +275,7 @@ def test(model, test_loader, device):
     return avg_loss, accuracy
 
 def main(args):
-    base = 64
+    base = 48
     num_epochs = 50
 
     image_net_mean = torch.Tensor([0.485, 0.456, 0.406])

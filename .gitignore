@@ -7,3 +7,6 @@ model.ckpt
 # Ignore files in a specific directory
 data/images/
 data/tmp/
+
+training_log*
+
