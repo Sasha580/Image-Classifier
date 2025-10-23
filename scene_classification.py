@@ -272,7 +272,7 @@ def test(model, test_loader, device):
 
 def main(args):
     base = 64
-    num_epochs = 15
+    num_epochs = 50
 
     image_net_mean = torch.Tensor([0.485, 0.456, 0.406])
     image_net_std = torch.Tensor([0.229, 0.224, 0.225])
