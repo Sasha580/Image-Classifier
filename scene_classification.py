@@ -232,7 +232,7 @@ def train(model, train_loader, val_loader, optimizer, criterion, device,
             print(results)
 
             # Write to log file
-            with open('training_log_train1_new_base.txt', 'a') as f:
+            with open('training_log_train3_base_48_cool_transform.txt', 'a') as f:
                 f.write(results + '\n')
 
 
@@ -294,9 +294,9 @@ def main(args):
         transforms.RandomHorizontalFlip(p=0.5),
 
         # photometric
-        # transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.02),
-        # transforms.RandomGrayscale(p=0.05),
-        # transforms.RandomPerspective(distortion_scale=0.15, p=0.1),
+        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.02),
+        transforms.RandomGrayscale(p=0.05),
+        transforms.RandomPerspective(distortion_scale=0.15, p=0.1),
         transforms.RandomRotation(degrees=10),
 
         # to tensor + normalize
