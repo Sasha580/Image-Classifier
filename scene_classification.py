@@ -290,9 +290,9 @@ def main(args):
         transforms.RandomHorizontalFlip(p=0.5),
 
         # photometric
-        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.02),
-        transforms.RandomGrayscale(p=0.05),
-        transforms.RandomPerspective(distortion_scale=0.15, p=0.1),
+        # transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.02),
+        # transforms.RandomGrayscale(p=0.05),
+        # transforms.RandomPerspective(distortion_scale=0.15, p=0.1),
         transforms.RandomRotation(degrees=10),
 
         # to tensor + normalize
