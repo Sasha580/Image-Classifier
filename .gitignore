@@ -1,0 +1,9 @@
+# Ignore a specific file
+model.ckpt
+
+# Ignore all files with a specific extension
+*.pdf
+
+# Ignore files in a specific directory
+data/images/
+data/tmp/
