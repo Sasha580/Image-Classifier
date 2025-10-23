@@ -104,8 +104,8 @@ class MyConv(nn.Module):
         # Create a feature space
         self.stem = nn.Conv2d(in_channels=3, out_channels=base, kernel_size=3, stride=1, padding=1, bias=False)
 
-        self.stage1 = self.make_stage(base, base, stride=2)  # Output: (64, 64, 64)
-        self.stage2 = self.make_stage(base, base * 2, stride=1)  # Output: (128, 64, 64)
+        self.stage1 = self.make_stage(base, base, stride=1)  # Output: (64, 128, 128)
+        self.stage2 = self.make_stage(base, base * 2, stride=2)  # Output: (128, 64, 64)
         self.stage3 = self.make_stage(base * 2, base * 4, stride=2)  # Output: (256, 32, 32)
         self.stage4 = self.make_stage(base * 4, base * 8, stride=2)  # Output: (512, 16, 16)
 
@@ -232,7 +232,7 @@ def train(model, train_loader, val_loader, optimizer, criterion, device,
             print(results)
 
             # Write to log file
-            with open('training_log_train4_arch_change.txt', 'a') as f:
+            with open('training_log_train5_hyperparam.txt', 'a') as f:
                 f.write(results + '\n')
 
 
@@ -329,12 +329,13 @@ def main(args):
     # Create the dataloaders
     
     # Define the batch size and number of workers
-    batch_size = 64
+    batch_size = 32
     num_workers = 8
 
-    lr = 0.05 * (batch_size / 256)
-    weight_decay = 2e-4
-    momentum = 0.9
+    # lr = 0.05 * (batch_size / 256)
+    lr = 0.001
+    weight_decay = 1e-4
+    momentum = 0.8
 
     # Create DataLoader for training and validation sets
     train_loader = DataLoader(miniplaces_train,
