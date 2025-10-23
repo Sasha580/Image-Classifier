@@ -228,9 +228,13 @@ def train(model, train_loader, val_loader, optimizer, criterion, device,
                 pbar.set_postfix(loss=loss.item())
 
             avg_loss, accuracy = evaluate(model, val_loader, criterion, device)
-            print(
-                f'Validation set: Average loss = {avg_loss:.4f}, Accuracy = {accuracy:.4f}'
-                )
+            results = f'Validation set: Average loss = {avg_loss:.4f}, Accuracy = {accuracy:.4f}'
+            print(results)
+
+            # Write to log file
+            with open('training_log_train1_new_transform.txt', 'a') as f:
+                f.write(results + '\n')
+
 
 def test(model, test_loader, device):
     """
