@@ -110,7 +110,7 @@ class MyConv(nn.Module):
         self.stage4 = self.make_stage(base * 4, base * 8, stride=2)  # Output: (512, 16, 16)
 
         self.pool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(512, num_classes)
+        self.fc = nn.Linear(base * 8, num_classes)
         self.flatten = nn.Flatten()
 
         self._init_identity_last_bn()
