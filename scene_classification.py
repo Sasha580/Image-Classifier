@@ -438,7 +438,7 @@ def main(args):
                             shuffle=False)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    device = torch.device('mps')
+    # device = torch.device('mps')
 
     model = MyConv(num_classes=len(miniplaces_train.label_dict), base=base)
                    
