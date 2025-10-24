@@ -314,7 +314,7 @@ def train(model, train_loader, val_loader, optimizer, criterion, device,
             print(results)
 
             # Write to log file
-            with open('training_log_train6_basic_transformations.txt', 'a') as f:
+            with open('training_log_old_arch_fancy_transform.txt', 'a') as f:
                 f.write(results + '\n')
 
 
