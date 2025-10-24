@@ -171,49 +171,33 @@ class MyConv(nn.Module):
             nn.Conv2d(in_channels=3, out_channels=base, kernel_size=7, stride=1, padding=3, bias=False),
             nn.BatchNorm2d(base),
             nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         )
 
-        self.res_block1 = BasicBlock(base, base, stride=2)
-        self.res_block2 = BasicBlock(base, base * 2, stride=1)
-
-        self.res_block3 = BasicBlock(base * 2, base * 2, stride=1)
-        self.res_block4 = BasicBlock(base * 2, base * 2, stride=2)
-
-        self.res_block5 = BasicBlock(base * 2, base * 4, stride=1)
-        self.res_block6 = BasicBlock(base * 4, base * 4, stride=2)
-
-        self.res_block7 = BasicBlock(base * 4, base * 8, stride=1)
-        self.res_block8 = BasicBlock(base * 8, base * 8, stride=2)
+        self.stage1 = self.make_stage(base, base, stride=2)
+        self.stage2 = self.make_stage(base, base * 2, stride=2)
+        self.stage3 = self.make_stage(base * 2, base * 4, stride=2)
+        self.stage4 = self.make_stage(base * 4, base * 8, stride=2)
 
         self.classifier = nn.Sequential(
             nn.AdaptiveAvgPool2d(1),
             nn.Flatten(),
-            nn.ReLU(),
             nn.Dropout(0.1),
             nn.Linear(base * 8, num_classes)
         )
 
     def make_stage(self, in_channels, out_channels, stride=1):
         return nn.Sequential(
-            BasicBlock(in_channels, out_channels, stride),
-            BasicBlock(out_channels, out_channels, stride=1)
+            BasicBlock(in_channels, out_channels, stride=1),
+            BasicBlock(out_channels, out_channels, stride=stride)
         )
 
     def forward(self, x, return_intermediate=False):
-        x = self.stem(x)  # Output: (64, 64, 64)
+        x = self.stem(x)  # Output: (64, 128, 128)
 
-        x = self.res_block1(x)  # Output: (64, 32, 32)
-        x = self.res_block2(x)  # Output: (128, 32, 32)
-
-        x = self.res_block3(x)  # Output: (128, 32, 32)
-        x = self.res_block4(x)  # Output: (128, 16, 16)
-
-        x = self.res_block5(x)  # Output: (256, 16, 16)
-        x = self.res_block6(x)  # Output: (256, 8, 8)
-
-        x = self.res_block7(x)  # Output: (512, 8, 8)
-        x = self.res_block8(x)  # Output: (512, 4, 4)
+        x = self.stage1(x)  # Output: (64, 64, 64)
+        x = self.stage2(x)  # Output: (128, 32, 32)
+        x = self.stage3(x)  # Output: (256, 16, 16)
+        x = self.stage4(x)  # Output: (512, 8, 8)
 
         x = self.classifier(x)  # Output: (num_classes, 1, 1)
         return x
@@ -313,7 +297,7 @@ def train(model, train_loader, val_loader, optimizer, criterion, device,
             print(results)
 
             # Write to log file
-            with open('training_log_9_AdamW.txt', 'a') as f:
+            with open('training_log_10_SGD_changed_staged_arch.txt', 'a') as f:
                 f.write(results + '\n')
 
 
@@ -422,9 +406,9 @@ def main(args):
     num_workers = 8
 
     # lr = 0.05 * (batch_size / 256)
-    lr = 3e-4
-    weight_decay = 1e-4
-    momentum = 0.9
+    lr = 1e-4
+    weight_decay = 3e-4
+    momentum = 0.8
 
     # Create DataLoader for training and validation sets
     train_loader = DataLoader(miniplaces_train,
@@ -441,14 +425,14 @@ def main(args):
 
     model = MyConv(num_classes=len(miniplaces_train.label_dict), base=base)
                    
-    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
-    # optimizer = torch.optim.SGD(
-    #     model.parameters(),
-    #     lr=lr,
-    #     weight_decay=weight_decay,
-    #     momentum=momentum,
-    #     nesterov=True
-    # )
+    # optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
+    optimizer = torch.optim.SGD(
+        model.parameters(),
+        lr=lr,
+        weight_decay=weight_decay,
+        momentum=momentum,
+        nesterov=True
+    )
 
     criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
 
