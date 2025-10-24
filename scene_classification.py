@@ -174,17 +174,10 @@ class MyConv(nn.Module):
             nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         )
 
-        self.res_block1 = BasicBlock(base, base, stride=2)
-        self.res_block2 = BasicBlock(base, base * 2, stride=1)
-
-        self.res_block3 = BasicBlock(base * 2, base * 2, stride=1)
-        self.res_block4 = BasicBlock(base * 2, base * 2, stride=2)
-
-        self.res_block5 = BasicBlock(base * 2, base * 4, stride=1)
-        self.res_block6 = BasicBlock(base * 4, base * 4, stride=2)
-
-        self.res_block7 = BasicBlock(base * 4, base * 8, stride=1)
-        self.res_block8 = BasicBlock(base * 8, base * 8, stride=2)
+        self.stage1 = self.make_stage(base, base, stride=2)
+        self.stage2 = self.make_stage(base, base * 2, stride=2)
+        self.stage3 = self.make_stage(base * 2, base * 4, stride=2)
+        self.stage4 = self.make_stage(base * 4, base * 8, stride=2)
 
         self.classifier = nn.Sequential(
             nn.Flatten(),
@@ -204,17 +197,10 @@ class MyConv(nn.Module):
     def forward(self, x, return_intermediate=False):
         x = self.stem(x)  # Output: (64, 64, 64)
 
-        x = self.res_block1(x)  # Output: (64, 32, 32)
-        x = self.res_block2(x)  # Output: (128, 32, 32)
-
-        x = self.res_block3(x)  # Output: (128, 32, 32)
-        x = self.res_block4(x)  # Output: (128, 16, 16)
-
-        x = self.res_block5(x)  # Output: (256, 16, 16)
-        x = self.res_block6(x)  # Output: (256, 8, 8)
-
-        x = self.res_block7(x)  # Output: (512, 8, 8)
-        x = self.res_block8(x)  # Output: (512, 4, 4)
+        x = self.stage1(x)  # Output: (64, 32, 32)
+        x = self.stage2(x)  # Output: (128, 16, 16)
+        x = self.stage3(x)  # Output: (256, 8, 8)
+        x = self.stage4(x)  # Output: (512, 4, 4)
 
         x = self.classifier(x)  # Output: (num_classes, 1, 1)
         return x
@@ -314,7 +300,7 @@ def train(model, train_loader, val_loader, optimizer, criterion, device,
             print(results)
 
             # Write to log file
-            with open('training_log_train6_basic_transformations.txt', 'a') as f:
+            with open('training_log_train7_ordinary_arch_new.txt', 'a') as f:
                 f.write(results + '\n')
 
 
