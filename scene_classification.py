@@ -116,6 +116,7 @@ class BasicBlock(nn.Module):
         out = self.relu(self.bn1(self.conv1(x)))
         out = self.bn2(self.conv2(out))
         out += self.shortcut(x)
+        out = self.relu(out)
         return out
 
 
@@ -297,7 +298,7 @@ def train(model, train_loader, val_loader, optimizer, criterion, device,
             print(results)
 
             # Write to log file
-            with open('training_log_11_SGD_changed_staged_arch_ordinary_transform.txt', 'a') as f:
+            with open('training_log_12_added_relu_in_block_HP.txt', 'a') as f:
                 f.write(results + '\n')
 
 
@@ -405,10 +406,10 @@ def main(args):
     batch_size = 64
     num_workers = 8
 
-    # lr = 0.05 * (batch_size / 256)
-    lr = 1e-4
-    weight_decay = 3e-4
-    momentum = 0.8
+    lr = 0.05 * (batch_size / 256)
+    # lr = 1e-4
+    weight_decay = 5e-4
+    momentum = 0.9
 
     # Create DataLoader for training and validation sets
     train_loader = DataLoader(miniplaces_train,
