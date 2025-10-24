@@ -313,7 +313,7 @@ def train(model, train_loader, val_loader, optimizer, criterion, device,
             print(results)
 
             # Write to log file
-            with open('training_log_8_reduce_fc.txt', 'a') as f:
+            with open('training_log_9_AdamW.txt', 'a') as f:
                 f.write(results + '\n')
 
 
@@ -421,9 +421,9 @@ def main(args):
     batch_size = 64
     num_workers = 8
 
-    lr = 0.05 * (batch_size / 256)
-    # lr = 0.001
-    weight_decay = 2e-4
+    # lr = 0.05 * (batch_size / 256)
+    lr = 3e-4
+    weight_decay = 1e-4
     momentum = 0.9
 
     # Create DataLoader for training and validation sets
@@ -441,14 +441,14 @@ def main(args):
 
     model = MyConv(num_classes=len(miniplaces_train.label_dict), base=base)
                    
-
-    optimizer = torch.optim.SGD(
-        model.parameters(),
-        lr=lr,
-        weight_decay=weight_decay,
-        momentum=momentum,
-        nesterov=True
-    )
+    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
+    # optimizer = torch.optim.SGD(
+    #     model.parameters(),
+    #     lr=lr,
+    #     weight_decay=weight_decay,
+    #     momentum=momentum,
+    #     nesterov=True
+    # )
 
     criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
 
