@@ -364,45 +364,45 @@ def main(args):
     image_net_std = torch.Tensor([0.229, 0.224, 0.225])
     
     ## Define data transformation
-    train_transform = transforms.Compose([
-        transforms.RandomHorizontalFlip(p=0.5),
-        transforms.RandomRotation(degrees=15),
-        transforms.Resize((128, 128)),
-        transforms.ToTensor(),
-        transforms.Normalize(image_net_mean, image_net_std),
-    ])
-
-    val_transform = transforms.Compose([
-        transforms.Resize((128, 128)),
-        transforms.ToTensor(),
-        transforms.Normalize(image_net_mean, image_net_std),
-    ])
-
     # train_transform = transforms.Compose([
-    #     # geometric & scale
-    #     transforms.RandomResizedCrop(128, scale=(0.7, 1.0), ratio=(0.9, 1.1)),
     #     transforms.RandomHorizontalFlip(p=0.5),
-    #
-    #     # photometric
-    #     transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.02),
-    #     transforms.RandomGrayscale(p=0.05),
-    #     transforms.RandomPerspective(distortion_scale=0.15, p=0.1),
-    #     transforms.RandomRotation(degrees=10),
-    #
-    #     # to tensor + normalize
+    #     transforms.RandomRotation(degrees=15),
+    #     transforms.Resize((128, 128)),
     #     transforms.ToTensor(),
     #     transforms.Normalize(image_net_mean, image_net_std),
-    #
-    #     # cutout-like reg (must be AFTER ToTensor)
-    #     transforms.RandomErasing(p=0.25, scale=(0.02, 0.12), ratio=(0.3, 3.3), inplace=True),
     # ])
     #
     # val_transform = transforms.Compose([
-    #     transforms.Resize(144),  # slightly bigger
-    #     transforms.CenterCrop(128),  # deterministic eval crop
+    #     transforms.Resize((128, 128)),
     #     transforms.ToTensor(),
     #     transforms.Normalize(image_net_mean, image_net_std),
     # ])
+
+    train_transform = transforms.Compose([
+        # geometric & scale
+        transforms.RandomResizedCrop(128, scale=(0.7, 1.0), ratio=(0.9, 1.1)),
+        transforms.RandomHorizontalFlip(p=0.5),
+
+        # photometric
+        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.02),
+        transforms.RandomGrayscale(p=0.05),
+        transforms.RandomPerspective(distortion_scale=0.15, p=0.1),
+        transforms.RandomRotation(degrees=10),
+
+        # to tensor + normalize
+        transforms.ToTensor(),
+        transforms.Normalize(image_net_mean, image_net_std),
+
+        # cutout-like reg (must be AFTER ToTensor)
+        transforms.RandomErasing(p=0.25, scale=(0.02, 0.12), ratio=(0.3, 3.3), inplace=True),
+    ])
+
+    val_transform = transforms.Compose([
+        transforms.Resize(144),  # slightly bigger
+        transforms.CenterCrop(128),  # deterministic eval crop
+        transforms.ToTensor(),
+        transforms.Normalize(image_net_mean, image_net_std),
+    ])
 
 
     data_root = 'data'
