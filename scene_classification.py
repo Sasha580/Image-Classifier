@@ -187,12 +187,11 @@ class MyConv(nn.Module):
         self.res_block8 = BasicBlock(base * 8, base * 8, stride=2)
 
         self.classifier = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
             nn.Flatten(),
-            nn.Linear(base * 8 * 4 * 4, base * 8 * 4),
             nn.ReLU(),
-            nn.Dropout(0.6),
-
-            nn.Linear(base * 8 * 4, num_classes)
+            nn.Dropout(0.1),
+            nn.Linear(base * 8, num_classes)
         )
 
     def make_stage(self, in_channels, out_channels, stride=1):
@@ -314,7 +313,7 @@ def train(model, train_loader, val_loader, optimizer, criterion, device,
             print(results)
 
             # Write to log file
-            with open('training_log_old_arch_fancy_transform.txt', 'a') as f:
+            with open('training_log_8_reduce_fc.txt', 'a') as f:
                 f.write(results + '\n')
 
 
