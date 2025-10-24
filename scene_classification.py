@@ -96,45 +96,127 @@ class PreActBasicBlock(nn.Module):
         out += self.shortcut(x)
         return out
 
+class BasicBlock(nn.Module):
+    def __init__(self, in_channels, out_channels, stride=1):
+        super(BasicBlock, self).__init__()
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(out_channels)
+
+        self.relu = nn.ReLU(inplace=True)
+
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False)
+        self.bn2 = nn.BatchNorm2d(out_channels)
+
+        if stride != 1 or in_channels != out_channels:
+            self.shortcut = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False)
+        else:
+            self.shortcut = nn.Identity()
+
+    def forward(self, x):
+        out = self.relu(self.bn1(self.conv1(x)))
+        out = self.bn2(self.conv2(out))
+        out += self.shortcut(x)
+        return out
+
+
+# class MyConv(nn.Module):
+#     def __init__(self, num_classes=100, base=64):
+#
+#         super().__init__()
+#
+#         # Create a feature space
+#         self.stem = nn.Conv2d(in_channels=3, out_channels=base, kernel_size=3, stride=1, padding=1, bias=False)
+#
+#         self.stage1 = self.make_stage(base, base, stride=1)  # Output: (64, 128, 128)
+#         self.stage2 = self.make_stage(base, base * 2, stride=2)  # Output: (128, 64, 64)
+#         self.stage3 = self.make_stage(base * 2, base * 4, stride=2)  # Output: (256, 32, 32)
+#         self.stage4 = self.make_stage(base * 4, base * 8, stride=2)  # Output: (512, 16, 16)
+#
+#         self.pool = nn.AdaptiveAvgPool2d((1, 1))
+#         self.fc = nn.Linear(base * 8, num_classes)
+#         self.flatten = nn.Flatten()
+#
+#         self._init_identity_last_bn()
+#
+#     def make_stage(self, in_channels, out_channels, stride=1):
+#         return nn.Sequential(
+#             PreActBasicBlock(in_channels, out_channels, stride),
+#             PreActBasicBlock(out_channels, out_channels, stride=1)
+#         )
+#
+#     def _init_identity_last_bn(self):
+#         # Zero-init the LAST BN gamma in each block
+#         for m in self.modules():
+#             if isinstance(m, PreActBasicBlock):
+#                 nn.init.zeros_(m.bn2.weight)
+#
+#     def forward(self, x, return_intermediate=False):
+#         x = self.stem(x)
+#         x = self.stage1(x)
+#         x = self.stage2(x)
+#         x = self.stage3(x)
+#         x = self.stage4(x)
+#         x = self.flatten(self.pool(x))
+#         x = self.fc(x)
+#         return x
+
+
 class MyConv(nn.Module):
     def __init__(self, num_classes=100, base=64):
 
         super().__init__()
 
         # Create a feature space
-        self.stem = nn.Conv2d(in_channels=3, out_channels=base, kernel_size=3, stride=1, padding=1, bias=False)
+        self.stem = nn.Sequential(
+            nn.Conv2d(in_channels=3, out_channels=base, kernel_size=7, stride=1, padding=3, bias=False),
+            nn.BatchNorm2d(base),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        )
 
-        self.stage1 = self.make_stage(base, base, stride=1)  # Output: (64, 128, 128)
-        self.stage2 = self.make_stage(base, base * 2, stride=2)  # Output: (128, 64, 64)
-        self.stage3 = self.make_stage(base * 2, base * 4, stride=2)  # Output: (256, 32, 32)
-        self.stage4 = self.make_stage(base * 4, base * 8, stride=2)  # Output: (512, 16, 16)
+        self.res_block1 = BasicBlock(base, base, stride=2)
+        self.res_block2 = BasicBlock(base, base * 2, stride=1)
 
-        self.pool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(base * 8, num_classes)
-        self.flatten = nn.Flatten()
+        self.res_block3 = BasicBlock(base * 2, base * 2, stride=1)
+        self.res_block4 = BasicBlock(base * 2, base * 2, stride=2)
 
-        self._init_identity_last_bn()
+        self.res_block5 = BasicBlock(base * 2, base * 4, stride=1)
+        self.res_block6 = BasicBlock(base * 4, base * 4, stride=2)
+
+        self.res_block7 = BasicBlock(base * 4, base * 8, stride=1)
+        self.res_block8 = BasicBlock(base * 8, base * 8, stride=2)
+
+        self.classifier = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(base * 8 * 4 * 4, base * 8 * 4),
+            nn.ReLU(),
+            nn.Dropout(0.6),
+
+            nn.Linear(base * 8 * 4, num_classes)
+        )
 
     def make_stage(self, in_channels, out_channels, stride=1):
         return nn.Sequential(
-            PreActBasicBlock(in_channels, out_channels, stride),
-            PreActBasicBlock(out_channels, out_channels, stride=1)
+            BasicBlock(in_channels, out_channels, stride),
+            BasicBlock(out_channels, out_channels, stride=1)
         )
 
-    def _init_identity_last_bn(self):
-        # Zero-init the LAST BN gamma in each block
-        for m in self.modules():
-            if isinstance(m, PreActBasicBlock):
-                nn.init.zeros_(m.bn2.weight)
-
     def forward(self, x, return_intermediate=False):
-        x = self.stem(x)
-        x = self.stage1(x)
-        x = self.stage2(x)
-        x = self.stage3(x)
-        x = self.stage4(x)
-        x = self.flatten(self.pool(x))
-        x = self.fc(x)
+        x = self.stem(x)  # Output: (64, 64, 64)
+
+        x = self.res_block1(x)  # Output: (64, 32, 32)
+        x = self.res_block2(x)  # Output: (128, 32, 32)
+
+        x = self.res_block3(x)  # Output: (128, 32, 32)
+        x = self.res_block4(x)  # Output: (128, 16, 16)
+
+        x = self.res_block5(x)  # Output: (256, 16, 16)
+        x = self.res_block6(x)  # Output: (256, 8, 8)
+
+        x = self.res_block7(x)  # Output: (512, 8, 8)
+        x = self.res_block8(x)  # Output: (512, 4, 4)
+
+        x = self.classifier(x)  # Output: (num_classes, 1, 1)
         return x
 
     
@@ -356,7 +438,7 @@ def main(args):
                             shuffle=False)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    # device = torch.device('mps')
+    device = torch.device('mps')
 
     model = MyConv(num_classes=len(miniplaces_train.label_dict), base=base)
                    
