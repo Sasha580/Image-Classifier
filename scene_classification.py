@@ -298,7 +298,7 @@ def train(model, train_loader, val_loader, optimizer, criterion, device,
             print(results)
 
             # Write to log file
-            with open('training_log_13_downsample_2nd_block.txt', 'a') as f:
+            with open('training_log_14_changed_transform.txt', 'a') as f:
                 f.write(results + '\n')
 
 
@@ -349,15 +349,16 @@ def main(args):
     
     ## Define data transformation
     train_transform = transforms.Compose([
-        transforms.RandomHorizontalFlip(p=0.5),
-        transforms.RandomRotation(degrees=15),
-        transforms.Resize((128, 128)),
+        transforms.RandomResizedCrop(128, scale=(0.6, 1.0), ratio=(3 / 4, 4 / 3)),
+        transforms.RandomHorizontalFlip(),
+        transforms.ColorJitter(0.2, 0.2, 0.2, 0.1),
         transforms.ToTensor(),
         transforms.Normalize(image_net_mean, image_net_std),
     ])
 
     val_transform = transforms.Compose([
-        transforms.Resize((128, 128)),
+        transforms.Resize(144),
+        transforms.CenterCrop(128),
         transforms.ToTensor(),
         transforms.Normalize(image_net_mean, image_net_std),
     ])
