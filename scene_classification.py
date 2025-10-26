@@ -8,6 +8,8 @@ from PIL import Image
 from torchvision import transforms
 from torch.utils.data import DataLoader, Dataset
 
+from torch.optim.lr_scheduler import CosineAnnealingLR
+
 
 class MiniPlaces(Dataset):
     def __init__(self, root_dir, split, transform=None, label_dict=None):
@@ -264,7 +266,16 @@ def train(model, train_loader, val_loader, optimizer, criterion, device,
 
     # Place the model on device
     model = model.to(device)
+
+    warmup_epochs = 3
+    base_lr = 0.0125
+    scheduler = CosineAnnealingLR(optimizer, T_max=num_epochs - warmup_epochs, eta_min=0.0)
     for epoch in range(num_epochs):
+        if epoch < warmup_epochs:
+            warmup_lr = base_lr * (epoch + 1) / warmup_epochs
+            for g in optimizer.param_groups:
+                g['lr'] = warmup_lr
+
         model.train() # Set model to training mode
 
         with tqdm(total=len(train_loader),
@@ -293,13 +304,17 @@ def train(model, train_loader, val_loader, optimizer, criterion, device,
                 pbar.update(1)
                 pbar.set_postfix(loss=loss.item())
 
-            avg_loss, accuracy = evaluate(model, val_loader, criterion, device)
-            results = f'Validation set: Average loss = {avg_loss:.4f}, Accuracy = {accuracy:.4f}'
-            print(results)
+        # step cosine AFTER the epoch once warmup is done
+        if epoch >= warmup_epochs:
+            scheduler.step()
 
-            # Write to log file
-            with open('training_log_14_changed_transform.txt', 'a') as f:
-                f.write(results + '\n')
+        avg_loss, accuracy = evaluate(model, val_loader, criterion, device)
+        results = f'Validation set: Average loss = {avg_loss:.4f}, Accuracy = {accuracy:.4f}'
+        print(results)
+
+        # Write to log file
+        with open('training_log_15_scheduler.txt', 'a') as f:
+            f.write(results + '\n')
 
 
 def test(model, test_loader, device):
