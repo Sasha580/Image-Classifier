@@ -192,6 +192,7 @@ class MyConv(nn.Module):
         return nn.Sequential(
             BasicBlock(in_channels, out_channels, stride=stride),
             BasicBlock(out_channels, out_channels, stride=1),
+            BasicBlock(out_channels, out_channels, stride=1)
         )
 
     def forward(self, x, return_intermediate=False):
@@ -313,7 +314,7 @@ def train(model, train_loader, val_loader, optimizer, criterion, device,
         print(results)
 
         # Write to log file
-        with open('training_log_18_lower_weight_decay_dropout.txt', 'a') as f:
+        with open('training_log_19_added_block + dropout.txt', 'a') as f:
             f.write(results + '\n')
 
 
