@@ -188,8 +188,8 @@ class MyConv(nn.Module):
 
     def make_stage(self, in_channels, out_channels, stride=1):
         return nn.Sequential(
-            BasicBlock(in_channels, out_channels, stride=1),
-            BasicBlock(out_channels, out_channels, stride=stride)
+            BasicBlock(in_channels, out_channels, stride=stride),
+            BasicBlock(out_channels, out_channels, stride=1)
         )
 
     def forward(self, x, return_intermediate=False):
@@ -298,7 +298,7 @@ def train(model, train_loader, val_loader, optimizer, criterion, device,
             print(results)
 
             # Write to log file
-            with open('training_log_12_added_relu_in_block_HP.txt', 'a') as f:
+            with open('training_log_13_downsample_2nd_block.txt', 'a') as f:
                 f.write(results + '\n')
 
 
