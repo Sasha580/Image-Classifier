@@ -184,7 +184,7 @@ class MyConv(nn.Module):
         self.classifier = nn.Sequential(
             nn.AdaptiveAvgPool2d(1),
             nn.Flatten(),
-            nn.Dropout(0.1),
+            nn.Dropout(0.3),
             nn.Linear(base * 8, num_classes)
         )
 
@@ -192,7 +192,6 @@ class MyConv(nn.Module):
         return nn.Sequential(
             BasicBlock(in_channels, out_channels, stride=stride),
             BasicBlock(out_channels, out_channels, stride=1),
-            BasicBlock(out_channels, out_channels, stride=1)
         )
 
     def forward(self, x, return_intermediate=False):
@@ -314,7 +313,7 @@ def train(model, train_loader, val_loader, optimizer, criterion, device,
         print(results)
 
         # Write to log file
-        with open('training_log_16_added_block.txt', 'a') as f:
+        with open('training_log_18_lower_weight_decay_dropout.txt', 'a') as f:
             f.write(results + '\n')
 
 
@@ -425,7 +424,7 @@ def main(args):
 
     lr = 0.05 * (batch_size / 256)
     # lr = 1e-4
-    weight_decay = 5e-4
+    weight_decay = 7e-4
     momentum = 0.9
 
     # Create DataLoader for training and validation sets
