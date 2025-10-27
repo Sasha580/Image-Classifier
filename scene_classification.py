@@ -191,11 +191,19 @@ class MyConv(nn.Module):
             nn.Linear(base * 8, num_classes)
         )
 
+        self._init_last_bn()
+
     def make_stage(self, in_channels, out_channels, stride=1):
         return nn.Sequential(
             BasicBlock(in_channels, out_channels, stride=stride),
             BasicBlock(out_channels, out_channels, stride=1)
         )
+
+    def _init_last_bn(self):
+        # Zero-init the LAST BN gamma in each block
+        for m in self.modules():
+            if isinstance(m, BasicBlock):
+                nn.init.zeros_(m.bn2.weight)
 
     def forward(self, x, return_intermediate=False):
         x = self.stem(x)  # Output: (64, 128, 128)
@@ -252,7 +260,8 @@ def evaluate(model, test_loader, criterion, device):
     
     return avg_loss, accuracy
 
-def train(model, train_loader, val_loader, optimizer, criterion, device, num_epochs, scheduler=None, warmup_epochs=0):
+def train(model, train_loader, val_loader, optimizer, criterion,
+          device, num_epochs, filename, scheduler=None, warmup_epochs=0):
     """
     Train the CNN classifer on the training set and evaluate it on the validation set every epoch.
 
@@ -307,12 +316,17 @@ def train(model, train_loader, val_loader, optimizer, criterion, device, num_epo
         if scheduler is not None:
             scheduler.step()
 
-        avg_loss, accuracy = evaluate(model, val_loader, criterion, device)
-        results = f'[{epoch + 1}/{num_epochs}] Validation set: Average loss = {avg_loss:.4f}, Accuracy = {accuracy:.4f}'
+        train_loss, train_acc = evaluate(model, train_loader, device, criterion)
+        val_loss, val_acc = evaluate(model, val_loader, criterion, device)
+        results = (
+            f'[{epoch + 1}/{num_epochs}]:\n'
+            f'Training set: Average loss = {train_loss:.4f}, Accuracy = {train_acc:.4f}\n'
+            f'Validation set: Average loss = {val_loss:.4f}, Accuracy = {val_acc:.4f}'
+        )
         print(results)
 
         # Write to log file
-        with open('training_log_21_remove_block', 'a') as f:
+        with open(filename, 'a') as f:
             f.write(results + '\n')
 
 
@@ -453,11 +467,12 @@ def main(args):
     criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
 
     scheduler = CosineAnnealingLR(optimizer, T_max=num_epochs, eta_min=0.0)
+    filename = 'training_log_22_zero_init_res.txt'
 
     if not args.test:
 
         train(model, train_loader, val_loader, optimizer, criterion,
-              device, num_epochs=num_epochs, scheduler=scheduler, warmup_epochs=3)
+              device, num_epochs, filename, scheduler=scheduler, warmup_epochs=3)
 
         torch.save({'model_state_dict': model.state_dict(),
                     'optimizer_state_dict':optimizer.state_dict()}, 'model.ckpt')

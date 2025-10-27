@@ -3,6 +3,7 @@ model.ckpt
 
 # Ignore all files with a specific extension
 *.pdf
+*.csv
 
 # Ignore files in a specific directory
 data/images/
