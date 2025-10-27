@@ -191,7 +191,7 @@ class MyConv(nn.Module):
             nn.Linear(base * 8, num_classes)
         )
 
-        self._init_last_bn()
+        # self._init_last_bn()
 
     def make_stage(self, in_channels, out_channels, stride=1):
         return nn.Sequential(
@@ -465,7 +465,7 @@ def main(args):
     )
 
     criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
-    filename = 'training_log_23_zero_init_res_lr_0.1.txt'
+    filename = 'training_log_24_no_zero_init_res_lr_0.1.txt'
 
     if not args.test:
 
