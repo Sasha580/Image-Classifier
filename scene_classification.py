@@ -125,96 +125,96 @@ class BasicBlock(nn.Module):
         return out
 
 
-# class MyConv(nn.Module):
-#     def __init__(self, num_classes=100, base=64):
-#
-#         super().__init__()
-#
-#         # Create a feature space
-#         self.stem = nn.Conv2d(in_channels=3, out_channels=base, kernel_size=3, stride=1, padding=1, bias=False)
-#
-#         self.stage1 = self.make_stage(base, base, stride=1)  # Output: (64, 128, 128)
-#         self.stage2 = self.make_stage(base, base * 2, stride=2)  # Output: (128, 64, 64)
-#         self.stage3 = self.make_stage(base * 2, base * 4, stride=2)  # Output: (256, 32, 32)
-#         self.stage4 = self.make_stage(base * 4, base * 8, stride=2)  # Output: (512, 16, 16)
-#
-#         self.pool = nn.AdaptiveAvgPool2d((1, 1))
-#         self.fc = nn.Linear(base * 8, num_classes)
-#         self.flatten = nn.Flatten()
-#
-#         self._init_identity_last_bn()
-#
-#     def make_stage(self, in_channels, out_channels, stride=1):
-#         return nn.Sequential(
-#             PreActBasicBlock(in_channels, out_channels, stride),
-#             PreActBasicBlock(out_channels, out_channels, stride=1)
-#         )
-#
-#     def _init_identity_last_bn(self):
-#         # Zero-init the LAST BN gamma in each block
-#         for m in self.modules():
-#             if isinstance(m, PreActBasicBlock):
-#                 nn.init.zeros_(m.bn2.weight)
-#
-#     def forward(self, x, return_intermediate=False):
-#         x = self.stem(x)
-#         x = self.stage1(x)
-#         x = self.stage2(x)
-#         x = self.stage3(x)
-#         x = self.stage4(x)
-#         x = self.flatten(self.pool(x))
-#         x = self.fc(x)
-#         return x
-
-
 class MyConv(nn.Module):
     def __init__(self, num_classes=100, base=64):
 
         super().__init__()
 
         # Create a feature space
-        self.stem = nn.Sequential(
-            nn.Conv2d(in_channels=3, out_channels=base, kernel_size=7, stride=1, padding=3, bias=False),
-            nn.BatchNorm2d(base),
-            nn.ReLU(inplace=True),
-        )
+        self.stem = nn.Conv2d(in_channels=3, out_channels=base, kernel_size=3, stride=1, padding=1, bias=False)
 
-        self.stage1 = self.make_stage(base, base, stride=2)
-        self.stage2 = self.make_stage(base, base * 2, stride=2)
-        self.stage3 = self.make_stage(base * 2, base * 4, stride=2)
-        self.stage4 = self.make_stage(base * 4, base * 8, stride=2)
+        self.stage1 = self.make_stage(base, base, stride=1)  # Output: (64, 128, 128)
+        self.stage2 = self.make_stage(base, base * 2, stride=2)  # Output: (128, 64, 64)
+        self.stage3 = self.make_stage(base * 2, base * 4, stride=2)  # Output: (256, 32, 32)
+        self.stage4 = self.make_stage(base * 4, base * 8, stride=2)  # Output: (512, 16, 16)
 
-        self.classifier = nn.Sequential(
-            nn.AdaptiveAvgPool2d(1),
-            nn.Flatten(),
-            nn.Dropout(0.3),
-            nn.Linear(base * 8, num_classes)
-        )
+        self.pool = nn.AdaptiveAvgPool2d((1, 1))
+        self.fc = nn.Linear(base * 8, num_classes)
+        self.flatten = nn.Flatten()
 
-        # self._init_last_bn()
+        # self._init_identity_last_bn()
 
     def make_stage(self, in_channels, out_channels, stride=1):
         return nn.Sequential(
-            BasicBlock(in_channels, out_channels, stride=stride),
-            BasicBlock(out_channels, out_channels, stride=1)
+            PreActBasicBlock(in_channels, out_channels, stride),
+            PreActBasicBlock(out_channels, out_channels, stride=1)
         )
 
-    def _init_last_bn(self):
+    def _init_identity_last_bn(self):
         # Zero-init the LAST BN gamma in each block
         for m in self.modules():
-            if isinstance(m, BasicBlock):
+            if isinstance(m, PreActBasicBlock):
                 nn.init.zeros_(m.bn2.weight)
 
     def forward(self, x, return_intermediate=False):
-        x = self.stem(x)  # Output: (64, 128, 128)
-
-        x = self.stage1(x)  # Output: (64, 64, 64)
-        x = self.stage2(x)  # Output: (128, 32, 32)
-        x = self.stage3(x)  # Output: (256, 16, 16)
-        x = self.stage4(x)  # Output: (512, 8, 8)
-
-        x = self.classifier(x)  # Output: (num_classes, 1, 1)
+        x = self.stem(x)
+        x = self.stage1(x)
+        x = self.stage2(x)
+        x = self.stage3(x)
+        x = self.stage4(x)
+        x = self.flatten(self.pool(x))
+        x = self.fc(x)
         return x
+
+
+# class MyConv(nn.Module):
+#     def __init__(self, num_classes=100, base=64):
+#
+#         super().__init__()
+#
+#         # Create a feature space
+#         self.stem = nn.Sequential(
+#             nn.Conv2d(in_channels=3, out_channels=base, kernel_size=7, stride=1, padding=3, bias=False),
+#             nn.BatchNorm2d(base),
+#             nn.ReLU(inplace=True),
+#         )
+#
+#         self.stage1 = self.make_stage(base, base, stride=2)
+#         self.stage2 = self.make_stage(base, base * 2, stride=2)
+#         self.stage3 = self.make_stage(base * 2, base * 4, stride=2)
+#         self.stage4 = self.make_stage(base * 4, base * 8, stride=2)
+#
+#         self.classifier = nn.Sequential(
+#             nn.AdaptiveAvgPool2d(1),
+#             nn.Flatten(),
+#             nn.Dropout(0.3),
+#             nn.Linear(base * 8, num_classes)
+#         )
+#
+#         # self._init_last_bn()
+#
+#     def make_stage(self, in_channels, out_channels, stride=1):
+#         return nn.Sequential(
+#             BasicBlock(in_channels, out_channels, stride=stride),
+#             BasicBlock(out_channels, out_channels, stride=1)
+#         )
+#
+#     def _init_last_bn(self):
+#         # Zero-init the LAST BN gamma in each block
+#         for m in self.modules():
+#             if isinstance(m, BasicBlock):
+#                 nn.init.zeros_(m.bn2.weight)
+#
+#     def forward(self, x, return_intermediate=False):
+#         x = self.stem(x)  # Output: (64, 128, 128)
+#
+#         x = self.stage1(x)  # Output: (64, 64, 64)
+#         x = self.stage2(x)  # Output: (128, 32, 32)
+#         x = self.stage3(x)  # Output: (256, 16, 16)
+#         x = self.stage4(x)  # Output: (512, 8, 8)
+#
+#         x = self.classifier(x)  # Output: (num_classes, 1, 1)
+#         return x
 
     
 def evaluate(model, test_loader, criterion, device):
@@ -465,7 +465,7 @@ def main(args):
     )
 
     criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
-    filename = 'training_log_24_no_zero_init_res_lr_0.1.txt'
+    filename = 'training_log_25_PreActBlock.txt'
 
     if not args.test:
 
