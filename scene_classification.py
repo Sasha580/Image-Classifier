@@ -435,7 +435,7 @@ def main(args):
     batch_size = 64
     num_workers = 8
 
-    lr = 0.05 * (batch_size / 256)
+    lr = 0.1 * (batch_size / 256)
     # lr = 1e-4
     weight_decay = 7e-4
     momentum = 0.9
@@ -465,7 +465,7 @@ def main(args):
     )
 
     criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
-    filename = 'training_log_22_zero_init_res.txt'
+    filename = 'training_log_23_zero_init_res_lr_0.1.txt'
 
     if not args.test:
 
