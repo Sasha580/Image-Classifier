@@ -8,7 +8,7 @@ from PIL import Image
 from torchvision import transforms
 from torch.utils.data import DataLoader, Dataset
 
-from torch.optim.lr_scheduler import CosineAnnealingLR
+from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR
 
 
 class MiniPlaces(Dataset):
@@ -110,7 +110,10 @@ class BasicBlock(nn.Module):
         self.bn2 = nn.BatchNorm2d(out_channels)
 
         if stride != 1 or in_channels != out_channels:
-            self.shortcut = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False)
+            self.shortcut = nn.Sequential(
+                nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False),
+                nn.BatchNorm2d(out_channels)
+            )
         else:
             self.shortcut = nn.Identity()
 
@@ -250,8 +253,7 @@ def evaluate(model, test_loader, criterion, device):
     
     return avg_loss, accuracy
 
-def train(model, train_loader, val_loader, optimizer, criterion, device,
-          num_epochs):
+def train(model, train_loader, val_loader, optimizer, criterion, device, num_epochs, scheduler=None, warmup_epochs=0):
     """
     Train the CNN classifer on the training set and evaluate it on the validation set every epoch.
 
@@ -268,15 +270,12 @@ def train(model, train_loader, val_loader, optimizer, criterion, device,
     # Place the model on device
     model = model.to(device)
 
-    warmup_epochs = 3
-    base_lr = 0.0125
-    scheduler = CosineAnnealingLR(optimizer, T_max=num_epochs - warmup_epochs, eta_min=0.0)
-    for epoch in range(num_epochs):
-        if epoch < warmup_epochs:
-            warmup_lr = base_lr * (epoch + 1) / warmup_epochs
-            for g in optimizer.param_groups:
-                g['lr'] = warmup_lr
+    if scheduler is not None:
+        warmup = LinearLR(optimizer, start_factor=1 / warmup_epochs, total_iters=warmup_epochs)
+        cosine = CosineAnnealingLR(optimizer, T_max=num_epochs - warmup_epochs, eta_min=0.0)
+        scheduler = SequentialLR(optimizer, schedulers=[warmup, cosine], milestones=[warmup_epochs])
 
+    for epoch in range(num_epochs):
         model.train() # Set model to training mode
 
         with tqdm(total=len(train_loader),
@@ -305,16 +304,16 @@ def train(model, train_loader, val_loader, optimizer, criterion, device,
                 pbar.update(1)
                 pbar.set_postfix(loss=loss.item())
 
-        # step cosine AFTER the epoch once warmup is done
-        if epoch >= warmup_epochs:
+        # Optimize the learning rate based on the schedule it it exists
+        if scheduler is not None:
             scheduler.step()
 
         avg_loss, accuracy = evaluate(model, val_loader, criterion, device)
-        results = f'Validation set: Average loss = {avg_loss:.4f}, Accuracy = {accuracy:.4f}'
+        results = f'[{epoch + 1}/{num_epochs}] Validation set: Average loss = {avg_loss:.4f}, Accuracy = {accuracy:.4f}'
         print(results)
 
         # Write to log file
-        with open('training_log_19_added_block + dropout.txt', 'a') as f:
+        with open('training_log_20_added_bn.txt', 'a') as f:
             f.write(results + '\n')
 
 
@@ -454,10 +453,12 @@ def main(args):
 
     criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
 
+    scheduler = CosineAnnealingLR(optimizer, T_max=num_epochs, eta_min=0.0)
+
     if not args.test:
 
         train(model, train_loader, val_loader, optimizer, criterion,
-              device, num_epochs=num_epochs)
+              device, num_epochs=num_epochs, scheduler=scheduler, warmup_epochs=3)
 
         torch.save({'model_state_dict': model.state_dict(),
                     'optimizer_state_dict':optimizer.state_dict()}, 'model.ckpt')
