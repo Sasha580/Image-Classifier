@@ -261,7 +261,7 @@ def evaluate(model, test_loader, criterion, device):
     return avg_loss, accuracy
 
 def train(model, train_loader, val_loader, optimizer, criterion,
-          device, num_epochs, filename, scheduler=None, warmup_epochs=0):
+          device, num_epochs, filename, scheduler=False, warmup_epochs=0):
     """
     Train the CNN classifer on the training set and evaluate it on the validation set every epoch.
 
@@ -278,7 +278,7 @@ def train(model, train_loader, val_loader, optimizer, criterion,
     # Place the model on device
     model = model.to(device)
 
-    if scheduler is not None:
+    if scheduler:
         warmup = LinearLR(optimizer, start_factor=1 / warmup_epochs, total_iters=warmup_epochs)
         cosine = CosineAnnealingLR(optimizer, T_max=num_epochs - warmup_epochs, eta_min=0.0)
         scheduler = SequentialLR(optimizer, schedulers=[warmup, cosine], milestones=[warmup_epochs])
@@ -313,10 +313,10 @@ def train(model, train_loader, val_loader, optimizer, criterion,
                 pbar.set_postfix(loss=loss.item())
 
         # Optimize the learning rate based on the schedule it it exists
-        if scheduler is not None:
+        if scheduler:
             scheduler.step()
 
-        train_loss, train_acc = evaluate(model, train_loader, device, criterion)
+        train_loss, train_acc = evaluate(model, train_loader, criterion, device)
         val_loss, val_acc = evaluate(model, val_loader, criterion, device)
         results = (
             f'[{epoch + 1}/{num_epochs}]:\n'
@@ -465,14 +465,12 @@ def main(args):
     )
 
     criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
-
-    scheduler = CosineAnnealingLR(optimizer, T_max=num_epochs, eta_min=0.0)
     filename = 'training_log_22_zero_init_res.txt'
 
     if not args.test:
 
         train(model, train_loader, val_loader, optimizer, criterion,
-              device, num_epochs, filename, scheduler=scheduler, warmup_epochs=3)
+              device, num_epochs, filename, scheduler=True, warmup_epochs=3)
 
         torch.save({'model_state_dict': model.state_dict(),
                     'optimizer_state_dict':optimizer.state_dict()}, 'model.ckpt')
