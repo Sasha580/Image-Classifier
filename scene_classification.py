@@ -131,7 +131,7 @@ class MyConv(nn.Module):
         super().__init__()
 
         # Create a feature space
-        self.stem = nn.Conv2d(in_channels=3, out_channels=base, kernel_size=3, stride=1, padding=1, bias=False)
+        self.stem = nn.Conv2d(in_channels=3, out_channels=base, kernel_size=7, stride=1, padding=3, bias=False)
 
         self.stage1 = self.make_stage(base, base, stride=1)  # Output: (64, 128, 128)
         self.stage2 = self.make_stage(base, base * 2, stride=2)  # Output: (128, 64, 64)
@@ -318,11 +318,14 @@ def train(model, train_loader, val_loader, optimizer, criterion,
 
         train_loss, train_acc = evaluate(model, train_loader, criterion, device)
         val_loss, val_acc = evaluate(model, val_loader, criterion, device)
-        results = (
-            f'[{epoch + 1}/{num_epochs}]:\n'
-            f'Training set: Average loss = {train_loss:.4f}, Accuracy = {train_acc:.4f}\n'
-            f'Validation set: Average loss = {val_loss:.4f}, Accuracy = {val_acc:.4f}'
-        )
+        results = f'''[{epoch + 1}/{num_epochs}]:
+        Training set: Average loss = {train_loss:.4f}, Accuracy = {train_acc:.4f}
+        Validation set: Average loss = {val_loss:.4f}, Accuracy = {val_acc:.4f}
+        '''
+        #     f'[{epoch + 1}/{num_epochs}]:\n'
+        #     f'Training set: Average loss = {train_loss:.4f}, Accuracy = {train_acc:.4f}\n'
+        #     f'Validation set: Average loss = {val_loss:.4f}, Accuracy = {val_acc:.4f}'
+        # )
         print(results)
 
         # Write to log file
@@ -465,7 +468,7 @@ def main(args):
     )
 
     criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
-    filename = 'training_log_25_PreActBlock.txt'
+    filename = 'training_log_26_PreActBlock_kernel=7.txt'
 
     if not args.test:
 
