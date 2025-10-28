@@ -131,7 +131,7 @@ class MyConv(nn.Module):
         super().__init__()
 
         # Create a feature space
-        self.stem = nn.Conv2d(in_channels=3, out_channels=base, kernel_size=7, stride=1, padding=3, bias=False)
+        self.stem = nn.Conv2d(in_channels=3, out_channels=base, kernel_size=3, stride=1, padding=1, bias=False)
 
         self.stage1 = self.make_stage(base, base, stride=1)  # Output: (64, 128, 128)
         self.stage2 = self.make_stage(base, base * 2, stride=2)  # Output: (128, 64, 64)
@@ -261,7 +261,7 @@ def evaluate(model, test_loader, criterion, device):
     return avg_loss, accuracy
 
 def train(model, train_loader, val_loader, optimizer, criterion,
-          device, num_epochs, filename, scheduler=False, warmup_epochs=0):
+          device, num_epochs, filename, scheduler=None, warmup_epochs=0):
     """
     Train the CNN classifer on the training set and evaluate it on the validation set every epoch.
 
@@ -279,9 +279,8 @@ def train(model, train_loader, val_loader, optimizer, criterion,
     model = model.to(device)
 
     if scheduler:
-        warmup = LinearLR(optimizer, start_factor=1 / warmup_epochs, total_iters=warmup_epochs)
-        cosine = CosineAnnealingLR(optimizer, T_max=num_epochs - warmup_epochs, eta_min=0.0)
-        scheduler = SequentialLR(optimizer, schedulers=[warmup, cosine], milestones=[warmup_epochs])
+        warmup = LinearLR(optimizer, start_factor=1e-3, total_iters=warmup_epochs)
+        scheduler = SequentialLR(optimizer, schedulers=[warmup, scheduler], milestones=[warmup_epochs])
 
     for epoch in range(num_epochs):
         model.train() # Set model to training mode
@@ -440,7 +439,7 @@ def main(args):
 
     lr = 0.1 * (batch_size / 256)
     # lr = 1e-4
-    weight_decay = 7e-4
+    weight_decay = 5e-4
     momentum = 0.9
 
     # Create DataLoader for training and validation sets
@@ -468,12 +467,14 @@ def main(args):
     )
 
     criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
-    filename = 'training_log_26_PreActBlock_kernel=7.txt'
+    warmup_epochs = 5
+    cosine = CosineAnnealingLR(optimizer, T_max=num_epochs - warmup_epochs, eta_min=lr / 100)
+    filename = 'training_log_27_PreAct_change_optimis.txt'
 
     if not args.test:
 
         train(model, train_loader, val_loader, optimizer, criterion,
-              device, num_epochs, filename, scheduler=True, warmup_epochs=3)
+              device, num_epochs, filename, scheduler=cosine, warmup_epochs=warmup_epochs)
 
         torch.save({'model_state_dict': model.state_dict(),
                     'optimizer_state_dict':optimizer.state_dict()}, 'model.ckpt')
