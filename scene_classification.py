@@ -261,7 +261,7 @@ def evaluate(model, test_loader, criterion, device):
     return avg_loss, accuracy
 
 def train(model, train_loader, val_loader, optimizer, criterion,
-          device, num_epochs, filename, scheduler=None, warmup_epochs=0):
+          device, num_epochs, filename, scheduler=False, warmup_epochs=0):
     """
     Train the CNN classifer on the training set and evaluate it on the validation set every epoch.
 
@@ -279,11 +279,12 @@ def train(model, train_loader, val_loader, optimizer, criterion,
     model = model.to(device)
 
     if scheduler:
-        warmup = LinearLR(optimizer, start_factor=1e-3, total_iters=warmup_epochs)
-        scheduler = SequentialLR(optimizer, schedulers=[warmup, scheduler], milestones=[warmup_epochs])
+        warmup = LinearLR(optimizer, start_factor=1 / warmup_epochs, total_iters=warmup_epochs)
+        cosine = CosineAnnealingLR(optimizer, T_max=num_epochs - warmup_epochs, eta_min=0.0)
+        scheduler = SequentialLR(optimizer, schedulers=[warmup, cosine], milestones=[warmup_epochs])
 
     for epoch in range(num_epochs):
-        model.train() # Set model to training mode
+        model.train()  # Set model to training mode
 
         with tqdm(total=len(train_loader),
                   desc=f'Epoch {epoch +1}/{num_epochs}',
@@ -311,7 +312,7 @@ def train(model, train_loader, val_loader, optimizer, criterion,
                 pbar.update(1)
                 pbar.set_postfix(loss=loss.item())
 
-        # Optimize the learning rate based on the schedule it it exists
+        # Optimize the learning rate based on the schedule if it exists
         if scheduler:
             scheduler.step()
 
@@ -364,15 +365,15 @@ def test(model, test_loader, device):
             
             
 
-    # Evaluate the model on the validation set
-    avg_loss = total_loss / len(test_loader)
-    accuracy = num_correct / num_samples
-    
-    return avg_loss, accuracy
+    # # Evaluate the model on the validation set
+    # avg_loss = total_loss / len(test_loader)
+    # accuracy = num_correct / num_samples
+    #
+    # return avg_loss, accuracy
 
 def main(args):
     base = 64
-    num_epochs = 50
+    num_epochs = 70
 
     image_net_mean = torch.Tensor([0.485, 0.456, 0.406])
     image_net_std = torch.Tensor([0.229, 0.224, 0.225])
@@ -439,7 +440,7 @@ def main(args):
 
     lr = 0.1 * (batch_size / 256)
     # lr = 1e-4
-    weight_decay = 5e-4
+    weight_decay = 5e-4  # 7e-4?
     momentum = 0.9
 
     # Create DataLoader for training and validation sets
@@ -467,30 +468,29 @@ def main(args):
     )
 
     criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
-    warmup_epochs = 5
-    cosine = CosineAnnealingLR(optimizer, T_max=num_epochs - warmup_epochs, eta_min=lr / 100)
-    filename = 'training_log_27_PreAct_change_optimis.txt'
+    filename = 'training_log_32.txt'
 
     if not args.test:
 
         train(model, train_loader, val_loader, optimizer, criterion,
-              device, num_epochs, filename, scheduler=cosine, warmup_epochs=warmup_epochs)
+              device, num_epochs, filename, scheduler=True, warmup_epochs=5)
 
         torch.save({'model_state_dict': model.state_dict(),
-                    'optimizer_state_dict':optimizer.state_dict()}, 'model.ckpt')
+                    'optimizer_state_dict': optimizer.state_dict()}, 'model.ckpt')
 
     else:
         miniplaces_test = MiniPlaces(data_root,
                                      split='test',
                                      transform=val_transform)
         test_loader = DataLoader(miniplaces_test,
-                                batch_size=batch_size,
-                                num_workers=num_workers,
-                                shuffle=False)        
+                                 batch_size=batch_size,
+                                 num_workers=num_workers,
+                                 shuffle=False)
         checkpoint = torch.load(args.checkpoint, weights_only=True)
         model.load_state_dict(checkpoint['model_state_dict'])
         preds = test(model, test_loader, device)
         write_predictions(preds, 'predictions.csv')
+
 
 def write_predictions(preds, filename):
     with open(filename, 'w') as f:
